@@ -1,159 +1,152 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const firstNum = document.getElementById('firstNum');
-    const secondNum = document.getElementById('secondNum');
-    const operator = document.getElementById('operator');
-    const calcButton = document.getElementById('calcButton');
-    const oldOut = document.querySelector('.oldResult');
-    const newOut = document.querySelector('.newResult');
-    const warnMsg = document.getElementById('warnMsg');
+let a = document.getElementById('firstNum');
+let b = document.getElementById('secondNum');
+let op = document.getElementById('operator');
+let btn = document.getElementById('calcButton');
+let oldDiv = document.querySelector('.oldResult');
+let newDiv = document.querySelector('.newResult');
+let errDiv = document.getElementById('warnMsg');
 
-    if (!firstNum || !secondNum || !operator || !calcButton || !oldOut || !newOut || !warnMsg) {
-        console.error('Не удалось найти необходимые элементы');
+let prev = '';
+
+function showErr(msg, field) {
+    a.classList.remove('error');
+    b.classList.remove('error');
+    
+    field.classList.add('error');
+    
+    let rect = field.getBoundingClientRect();
+    errDiv.style.top = (rect.bottom + window.scrollY + 5) + 'px';
+    errDiv.style.left = (rect.left + window.scrollX) + 'px';
+    errDiv.textContent = msg;
+    errDiv.style.display = 'block';
+    
+    setTimeout(function() {
+        errDiv.style.display = 'none';
+    }, 3000);
+}
+
+function clearErr() {
+    a.classList.remove('error');
+    b.classList.remove('error');
+    errDiv.style.display = 'none';
+}
+
+function getNums() {
+    let v1 = a.value.trim();
+    let v2 = b.value.trim();
+    
+    if (v1 === '') {
+        showErr('Введите первое число', a);
+        return null;
+    }
+    if (v2 === '') {
+        showErr('Введите второе число', b);
+        return null;
+    }
+    
+    let n1 = parseFloat(v1);
+    let n2 = parseFloat(v2);
+    
+    if (isNaN(n1)) {
+        showErr('Первое число должно быть числом', a);
+        return null;
+    }
+    if (isNaN(n2)) {
+        showErr('Второе число должно быть числом', b);
+        return null;
+    }
+    
+    return { n1: n1, n2: n2 };
+}
+
+function calc(n1, n2, oper) {
+    if (oper === 'add') {
+        return n1 + n2;
+    } else if (oper === 'subtract') {
+        return n1 - n2;
+    } else if (oper === 'multiply') {
+        return n1 * n2;
+    } else if (oper === 'divide') {
+        return n1 / n2;
+    } else {
+        return NaN;
+    }
+}
+
+btn.addEventListener('click', function() {
+    clearErr();
+    
+    let nums = getNums();
+    if (nums === null) {
         return;
     }
-
-    let previousOp = '';
-
-    function normalizeInput(e) {
-        const input = e.target;
-        let value = input.value;
-        value = value.replace(/[^0-9.-]/g, '');
-
-        const minusCount = (value.match(/-/g) || []).length;
-        if (minusCount > 1) {
-            value = value.replace(/-/g, '');
-            if (value.length > 0 && value[0] !== '-') {
-                value = '-' + value;
-            }
-        } else if (minusCount === 1 && value[0] !== '-') {
-            value = value.replace(/-/g, '');
-        }
-
-        const dotCount = (value.match(/\./g) || []).length;
-        if (dotCount > 1) {
-            const parts = value.split('.');
-            value = parts[0] + '.' + parts.slice(1).join('').replace(/\./g, '');
-        }
-
-        if (!(value === '' || value === '-' || value === '.' || value === '-.')) {
-            let num = parseFloat(value);
-            if (!isNaN(num)) {
-                if (num === 0 && value.startsWith('-')) {
-                    value = '-0';
-                } else {
-                    value = num.toString();
-                }
-            }
-        }
-
-        if (input.value !== value) {
-            input.value = value;
-        }
+    
+    let n1 = nums.n1;
+    let n2 = nums.n2;
+    let oper = op.value;
+    
+    if (oper === 'divide' && n2 === 0) {
+        showErr('На ноль делить нельзя', b);
+        return;
     }
-
-    firstNum.addEventListener('input', normalizeInput);
-    secondNum.addEventListener('input', normalizeInput);
-
-    function showError(message, field) {
-        document.querySelectorAll('.numberInput, .operatorSelect').forEach(el => {
-            el.classList.remove('error');
-        });
-
-        if (field) {
-            field.classList.add('error');
-            const rect = field.getBoundingClientRect();
-            warnMsg.style.top = rect.bottom + window.scrollY + 5 + 'px';
-            warnMsg.style.left = rect.left + window.scrollX + 'px';
-            warnMsg.style.right = 'auto';
-            warnMsg.textContent = message;
-            warnMsg.style.display = 'block';
-        } else {
-            warnMsg.style.top = '20px';
-            warnMsg.style.right = '20px';
-            warnMsg.style.left = 'auto';
-            warnMsg.textContent = message;
-            warnMsg.style.display = 'block';
-        }
-
-        setTimeout(() => {
-            warnMsg.style.display = 'none';
-        }, 3000);
+    
+    let res = calc(n1, n2, oper);
+    
+    if (isNaN(res)) {
+        showErr('Ошибка при вычислении', a);
+        return;
     }
-
-    function validate() {
-        const val1 = firstNum.value.trim();
-        const val2 = secondNum.value.trim();
-        const op = operator.value;
-
-        if (val1 === '') {
-            showError('Введите первое число', firstNum);
-            return null;
-        }
-        if (val2 === '') {
-            showError('Введите второе число', secondNum);
-            return null;
-        }
-
-        const num1 = parseFloat(val1);
-        const num2 = parseFloat(val2);
-
-        if (op === 'divide' && num2 === 0) {
-            showError('На ноль делить нельзя', secondNum);
-            return null;
-        }
-
-        document.querySelectorAll('.numberInput, .operatorSelect').forEach(el => {
-            el.classList.remove('error');
-        });
-        warnMsg.style.display = 'none';
-
-        return { num1, num2 };
+    
+    let rounded = Math.round(res * 10000000000) / 10000000000;
+    
+    let sym;
+    if (oper === 'add') {
+        sym = '+';
+    } else if (oper === 'subtract') {
+        sym = '-';
+    } else if (oper === 'multiply') {
+        sym = '*';
+    } else if (oper === 'divide') {
+        sym = '/';
     }
-
-    function compute(n1, n2, op) {
-        switch (op) {
-            case 'add': return n1 + n2;
-            case 'subtract': return n1 - n2;
-            case 'multiply': return n1 * n2;
-            case 'divide': return n1 / n2;
-            default: return NaN;
-        }
+    
+    let mobile = window.innerWidth <= 600;
+    
+    let curStr;
+    if (mobile) {
+        curStr = n1 + '<br>' + sym + '<br>' + n2 + '<br>= ' + rounded;
+    } else {
+        curStr = n1 + ' ' + sym + ' ' + n2 + ' = ' + rounded;
     }
+    
+    oldDiv.innerHTML = prev;
+    newDiv.innerHTML = curStr;
+    
+    prev = curStr;
+});
 
-    calcButton.addEventListener('click', () => {
-        const validated = validate();
-        if (!validated) return;
+a.addEventListener('input', function() {
+    a.classList.remove('error');
+    if (!a.classList.contains('error') && !b.classList.contains('error')) {
+        errDiv.style.display = 'none';
+    }
+});
 
-        const { num1, num2 } = validated;
-        const op = operator.value;
-        const result = compute(num1, num2, op);
+b.addEventListener('input', function() {
+    b.classList.remove('error');
+    if (!a.classList.contains('error') && !b.classList.contains('error')) {
+        errDiv.style.display = 'none';
+    }
+});
 
-        if (!isNaN(result)) {
-            const rounded = Math.round(result * 1e10) / 1e10;
-            const symbol = {
-                'add': '+',
-                'subtract': '-',
-                'multiply': '*',
-                'divide': '/'
-            }[op];
+a.addEventListener('keydown', function(event) {
+    if (event.key === 'Enter') {
+        btn.click();
+    }
+});
 
-            const isMobile = window.innerWidth <= 600;
-            let currentStr;
-
-            if (isMobile) {
-                currentStr = `${num1}<br>${symbol}<br>${num2}<br>= ${rounded}`;
-            } else {
-                currentStr = `${num1} ${symbol} ${num2} = ${rounded}`;
-            }
-
-            oldOut.innerHTML = previousOp || '';
-            newOut.innerHTML = currentStr;
-            previousOp = currentStr;
-        } else {
-            showError('Ошибка вычисления');
-        }
-    });
-
-    oldOut.innerHTML = '';
-    newOut.innerHTML = '';
+b.addEventListener('keydown', function(event) {
+    if (event.key === 'Enter') {
+        btn.click();
+    }
 });
